@@ -1,0 +1,17 @@
+# Copy to terraform.tfvars and adjust. terraform.tfvars is gitignored.
+
+# Region + subscription (defaults already point at the <org> sub / eastus).
+# subscription_id    = "00000000-0000-0000-0000-000000000000"
+# location           = "eastus"
+
+# Identity running Terraform (gets Key Vault Secrets Officer to seed the secret).
+# deployer_object_id = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+
+# FREE by default. Flip to true only for the private-endpoint demo (~$7/mo),
+# then `terraform destroy`.
+# enable_private_endpoint = false
+
+# Lock the Key Vault / Storage public endpoints to the app subnet + your IP.
+# Keep false for the first apply, then set true after the secret is seeded.
+# restrict_network = false
+# deployer_ip      = "203.0.113.10"   # your current public IP

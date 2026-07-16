@@ -1,0 +1,13 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Secrets / local config — never commit
+terraform.tfvars
+*.auto.tfvars
+.env
+
+# Keep the templates
+!terraform.tfvars.example
