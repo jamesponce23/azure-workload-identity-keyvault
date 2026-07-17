@@ -118,7 +118,11 @@ Everything lives in one resource group, **`rg-zero-secrets`** (region `eastus`).
   - **Key Vault Secrets User** on the vault (read secrets),
   - **Storage Blob Data Reader** on the storage account (read blobs),
   - and your deployer identity gets **Key Vault Secrets Officer** so Terraform can
-    *write* the demo secret (an RBAC vault has no access policies to fall back on).
+    *write* the demo secret (an RBAC vault has no access policies to fall back on),
+  - plus **Storage Blob Data Owner** (scoped to the resource group) for the
+    deployer, so Terraform can reach the storage *data plane* over Entra auth —
+    the account has no keys, and control-plane Owner does **not** grant data
+    access. RG scope (not account scope) avoids a create-time dependency cycle.
 - A **45-second `time_sleep`** absorbs RBAC's eventual-consistency lag so the
   secret write / read doesn't race the role assignments.
 
@@ -225,10 +229,18 @@ Authentication is your own `az login` (Owner) identity — no service principal 
 az login                     # if not already signed in
 az account show              # confirm the right subscription
 
+# One-time: register the Container Apps resource provider on the subscription.
+# Skip and the first apply fails with MissingSubscriptionRegistration (Microsoft.App).
+az provider register --namespace Microsoft.App --wait
+
 terraform init
 terraform plan               # read-only, no charges — review the resource list
 terraform apply              # creates resources (free in the default posture)
 ```
+
+Because the storage account has shared-key auth disabled, the provider is
+configured with `storage_use_azuread = true` (in `main.tf`) so it talks to the
+storage data plane using your Entra identity rather than an account key.
 
 Real application code would authenticate like this (no secret anywhere):
 
@@ -273,17 +285,25 @@ vault blocking a future redeploy of the same name.
 
 ## Known apply-time caveats
 
-`terraform validate` passes, but these are the runtime risks to watch on the first
-real `apply` (none are showstoppers):
+These were the runtime risks on the first real `apply`. All are resolved in the
+current code; kept here as a record of what to watch:
 
-1. **Subnet delegation + service endpoints** — `snet-app` is both delegated to
+1. **`Microsoft.App` not registered** — a fresh subscription that has never used
+   Container Apps returns `MissingSubscriptionRegistration`. Fixed by the one-time
+   `az provider register --namespace Microsoft.App` step above.
+2. **Keyless storage + data-plane auth** — with `shared_access_key_enabled = false`,
+   the provider's default key-based data-plane calls (blob-service polling, container
+   creation) fail with `403 Key based authentication is not permitted`. Fixed by
+   `storage_use_azuread = true` plus a **Storage Blob Data Owner** role for the
+   deployer, scoped at the resource group to avoid a create-time dependency cycle.
+3. **Subnet delegation + service endpoints** — `snet-app` is both delegated to
    Container Apps *and* carries Key Vault/Storage service endpoints. That combo can
    occasionally conflict; if apply complains, the fix is to move the service
    endpoints or rely on the private-endpoint path instead.
-2. **RBAC propagation** — even with the 45s wait, role assignments are eventually
+4. **RBAC propagation** — even with the 45s wait, role assignments are eventually
    consistent; a first apply can fail on the secret write/read and succeed on
    re-apply.
-3. **Container App secret resolution** — the app resolves the Key Vault secret at
+5. **Container App secret resolution** — the app resolves the Key Vault secret at
    create time, so it depends on the identity's role already being live.
 
 ---
@@ -332,10 +352,11 @@ zero-secrets-architecture.drawio(.png)  the diagram above
 
 - [x] Architecture diagram
 - [x] Terraform scaffolded — `init` + `validate` clean
-- [ ] `terraform apply` (default free posture)
+- [x] `terraform apply` (default free posture) — **deployed and verified**
 - [ ] Optional: real app code using `DefaultAzureCredential`
 - [ ] Optional: remote Terraform backend (shared Azure Storage), like the CA/PIM project
 - [ ] Optional: GitHub OIDC deploy federation (retire even the `az login` step)
 
-> **Nothing here is applied to Azure yet** — this repo currently defines the
-> infrastructure; it hasn't created it.
+> **Status: applied to Azure.** The default free posture is deployed in resource
+> group `rg-zero-secrets` (Key Vault `kv-zsec-2imzc`, storage `stzsec2imzc`,
+> Container App `ca-zero-secrets`). Tear down with `terraform destroy` when done.

@@ -33,6 +33,19 @@ resource "azurerm_role_assignment" "deployer_kv_secrets_officer" {
   principal_id         = var.deployer_object_id
 }
 
+# Deployer (you) -> blob data-plane owner, so Terraform can poll the blob service
+# and create the container over Entra auth (the account has no keys, and
+# Owner/Contributor at the control plane does NOT grant data-plane access).
+# Scoped at the RESOURCE GROUP, not the account: the provider polls the blob
+# data plane during account *creation*, so the role must already exist — which it
+# can't if it's scoped to an account that doesn't exist yet. RG scope breaks that
+# cycle (and still least-privilege: blob data, this demo RG only).
+resource "azurerm_role_assignment" "deployer_blob_owner" {
+  scope                = azurerm_resource_group.rg.id
+  role_definition_name = "Storage Blob Data Owner"
+  principal_id         = var.deployer_object_id
+}
+
 # RBAC is eventually consistent — give role assignments a moment to propagate
 # before the secret write / Container App secret read that depend on them.
 resource "time_sleep" "rbac_propagation" {
@@ -40,5 +53,6 @@ resource "time_sleep" "rbac_propagation" {
   depends_on = [
     azurerm_role_assignment.app_kv_secrets_user,
     azurerm_role_assignment.deployer_kv_secrets_officer,
+    azurerm_role_assignment.deployer_blob_owner,
   ]
 }

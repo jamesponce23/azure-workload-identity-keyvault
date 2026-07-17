@@ -22,6 +22,13 @@ terraform {
 
 provider "azurerm" {
   subscription_id = var.subscription_id
+
+  # The storage account has shared-key auth disabled, so the provider must use
+  # our az-login (Entra) identity for data-plane calls (blob-service polling and
+  # container creation) instead of account keys. Requires the deployer to hold a
+  # Storage Blob Data role (see identity.tf).
+  storage_use_azuread = true
+
   features {
     key_vault {
       # Let `terraform destroy` fully remove the vault so the demo costs nothing

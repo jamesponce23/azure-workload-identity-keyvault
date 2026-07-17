@@ -23,6 +23,11 @@ resource "azurerm_storage_account" "target" {
     ip_rules                   = var.restrict_network && var.deployer_ip != "" ? [var.deployer_ip] : []
   }
 
+  # The provider polls the blob data plane right after creating the account. With
+  # keys disabled that poll uses Entra auth, so wait until the deployer's blob
+  # role (in identity.tf) has propagated before the account is created.
+  depends_on = [time_sleep.rbac_propagation]
+
   tags = local.tags
 }
 
