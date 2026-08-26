@@ -207,7 +207,7 @@ All in `variables.tf`; copy `terraform.tfvars.example` to `terraform.tfvars` to 
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `subscription_id` | <org> sub | Where to deploy |
+| `subscription_id` | caller's active subscription | Where to deploy |
 | `location` | `eastus` | Region |
 | `deployer_object_id` | James | Gets *Key Vault Secrets Officer* to seed the secret |
 | `enable_private_endpoint` | `false` | `true` = add PE + private DNS, disable public access (~$7/mo) |

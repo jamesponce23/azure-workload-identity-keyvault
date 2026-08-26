@@ -1,7 +1,12 @@
 variable "subscription_id" {
-  description = "Target Azure subscription ID. Terraform authenticates via your `az login` (Owner) identity."
+  description = <<-EOT
+    Target Azure subscription ID. Terraform authenticates via your `az login`
+    (Owner) identity. Leave null to inherit ARM_SUBSCRIPTION_ID or your active
+    `az account` context; set it in a gitignored terraform.tfvars to pin this
+    config to one subscription.
+  EOT
   type        = string
-  default     = "00000000-0000-0000-0000-000000000000"
+  default     = null
 }
 
 variable "location" {
@@ -14,10 +19,12 @@ variable "deployer_object_id" {
   description = <<-EOT
     Object ID of the human/identity running Terraform. Granted the Key Vault
     Secrets Officer RBAC role so it can seed the demo secret (RBAC vault has no
-    access policies). Defaults to James.
+    access policies). Leave null to look it up at plan time from the identity
+    running Terraform (see local.deployer_object_id in main.tf), or set it
+    explicitly in a gitignored terraform.tfvars.
   EOT
   type        = string
-  default     = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+  default     = null
 }
 
 variable "enable_private_endpoint" {

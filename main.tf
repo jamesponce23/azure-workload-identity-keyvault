@@ -46,6 +46,10 @@ resource "random_string" "suffix" {
 }
 
 locals {
+  # Falls back to the identity running Terraform when deployer_object_id is
+  # unset, so no personal object ID has to be committed to this repo.
+  deployer_object_id = coalesce(var.deployer_object_id, data.azurerm_client_config.current.object_id)
+
   suffix   = random_string.suffix.result
   name     = "zsec"
   location = var.location

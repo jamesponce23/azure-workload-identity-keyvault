@@ -30,7 +30,7 @@ resource "azurerm_role_assignment" "app_blob_reader" {
 resource "azurerm_role_assignment" "deployer_kv_secrets_officer" {
   scope                = azurerm_key_vault.kv.id
   role_definition_name = "Key Vault Secrets Officer"
-  principal_id         = var.deployer_object_id
+  principal_id         = local.deployer_object_id
 }
 
 # Deployer (you) -> blob data-plane owner, so Terraform can poll the blob service
@@ -43,7 +43,7 @@ resource "azurerm_role_assignment" "deployer_kv_secrets_officer" {
 resource "azurerm_role_assignment" "deployer_blob_owner" {
   scope                = azurerm_resource_group.rg.id
   role_definition_name = "Storage Blob Data Owner"
-  principal_id         = var.deployer_object_id
+  principal_id         = local.deployer_object_id
 }
 
 # RBAC is eventually consistent — give role assignments a moment to propagate
