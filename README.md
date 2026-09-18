@@ -9,10 +9,6 @@ A small, deliberately-minimal Azure project that demonstrates one principle:
 > secrets it *does* need from **Azure Key Vault**, authorized by **RBAC** (not
 > access policies) and reachable over a **private network path**.
 
-It is the Azure companion to the AWS "AI SOC Chatbot" project. Same lesson —
-**short-lived, identity-based auth beats static secrets** — expressed in a second
-cloud. See [Why this pairs with the AWS project](#why-this-pairs-with-the-aws-project).
-
 ---
 
 ## Table of contents
@@ -28,9 +24,8 @@ cloud. See [Why this pairs with the AWS project](#why-this-pairs-with-the-aws-pr
 9. [Prove it (verify zero secrets)](#prove-it-verify-zero-secrets)
 10. [Tear it down](#tear-it-down)
 11. [Known apply-time caveats](#known-apply-time-caveats)
-12. [Why this pairs with the AWS project](#why-this-pairs-with-the-aws-project)
-13. [File layout](#file-layout)
-14. [Status & roadmap](#status--roadmap)
+12. [File layout](#file-layout)
+13. [Status & roadmap](#status--roadmap)
 
 ---
 
@@ -305,28 +300,6 @@ current code; kept here as a record of what to watch:
    re-apply.
 5. **Container App secret resolution** — the app resolves the Key Vault secret at
    create time, so it depends on the identity's role already being live.
-
----
-
-## Why this pairs with the AWS project
-
-The AWS "AI SOC Chatbot" project reached the same conclusion from the other side:
-its early design shipped a **client-side API key**, which we removed in favor of
-identity-based auth (Cognito-issued JWTs to the API, IAM roles for services, and a
-GitHub **OIDC** deploy role instead of stored cloud keys). The lesson there and
-here is identical:
-
-| | AWS SOC project | This Azure project |
-|--|-----------------|--------------------|
-| App-to-service auth | IAM roles (STS short-lived creds) | Managed identity (short-lived tokens) |
-| Human/CI to cloud | GitHub **OIDC** federated role (no stored keys) | `az login` now; OIDC federation is the roadmap |
-| Secret handling | Removed the client-side API key | Secrets in Key Vault, fetched by identity |
-| Authorization | Least-privilege IAM policies | Least-privilege **RBAC** roles |
-| Principle | **Identity over static secrets** | **Identity over static secrets** |
-
-Demonstrating the same principle in **two different clouds** is the point: it shows
-the idea is architectural, not vendor-specific — which is what "cloud security
-engineer" actually means.
 
 ---
 
