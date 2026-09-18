@@ -18,14 +18,13 @@ A small, deliberately-minimal Azure project that demonstrates one principle:
 3. [How "zero secrets" is actually enforced](#how-zero-secrets-is-actually-enforced)
 4. [Architecture, component by component](#architecture-component-by-component)
 5. [Key design decisions (and why)](#key-design-decisions-and-why)
-6. [Cost model — how it stays free](#cost-model--how-it-stays-free)
-7. [Configuration & toggles](#configuration--toggles)
-8. [Deploy it](#deploy-it)
-9. [Prove it (verify zero secrets)](#prove-it-verify-zero-secrets)
-10. [Tear it down](#tear-it-down)
-11. [Known apply-time caveats](#known-apply-time-caveats)
-12. [File layout](#file-layout)
-13. [Status & roadmap](#status--roadmap)
+6. [Configuration & toggles](#configuration--toggles)
+7. [Deploy it](#deploy-it)
+8. [Prove it (verify zero secrets)](#prove-it-verify-zero-secrets)
+9. [Tear it down](#tear-it-down)
+10. [Known apply-time caveats](#known-apply-time-caveats)
+11. [File layout](#file-layout)
+12. [Status & roadmap](#status--roadmap)
 
 ---
 
@@ -147,7 +146,7 @@ Everything lives in one resource group, **`rg-zero-secrets`** (region `eastus`).
 ### Private endpoint (`private_endpoint.tf`)
 - Behind `enable_private_endpoint`. Adds the **Private DNS zone**
   (`privatelink.vaultcore.azure.net`), a VNet link, and the **Private Endpoint**
-  itself. This is the only paid piece — see [Cost model](#cost-model--how-it-stays-free).
+  itself.
 
 ---
 
@@ -168,31 +167,15 @@ auditable centrally, and supports least-privilege data-plane roles like *Key Vau
 Secrets User*. Using RBAC is a core requirement of the premise.
 
 **Service endpoint by default, private endpoint by toggle.**
-A private endpoint is the "textbook" private path — but it costs ~$7/month. A
-**service endpoint** keeps traffic on Azure's backbone and RBAC-gates the vault for
-**free**. So the default posture is free-but-legit, and the private endpoint is one
-flag away for when you want the real thing for a portfolio screenshot.
+A private endpoint is the "textbook" private path, but it adds an extra billable
+resource. A **service endpoint** keeps traffic on Azure's backbone and RBAC-gates
+the vault with no extra resources. So the default posture is the lightweight one,
+and the private endpoint is one flag away.
 
 **Storage account keys disabled.**
 Turning off `shared_access_key_enabled` is what makes the "no keys" claim true
 rather than aspirational — it removes the fallback that most storage code silently
 relies on.
-
----
-
-## Cost model — how it stays free
-
-| Component | Cost |
-|-----------|------|
-| Container Apps (Consumption, scale-to-zero) | **~$0** — covered by the monthly free grant |
-| Key Vault | **~$0** — billed per operation (pennies per 10k) |
-| VNet, subnets, service endpoints, managed identity, RBAC | **Free** |
-| Storage account | **Pennies** at rest for a demo |
-| Log Analytics | Small ingestion cost; trivial for a demo |
-| **Private endpoint** (only if `enable_private_endpoint = true`) | **~$7/month** while it exists (billed hourly → pennies if you build, demo, destroy) |
-
-**Bottom line:** left in its default configuration, this project is effectively
-free. The single paid component is opt-in and easy to tear down.
 
 ---
 
@@ -205,7 +188,7 @@ All in `variables.tf`; copy `terraform.tfvars.example` to `terraform.tfvars` to 
 | `subscription_id` | caller's active subscription | Where to deploy |
 | `location` | `eastus` | Region |
 | `deployer_object_id` | James | Gets *Key Vault Secrets Officer* to seed the secret |
-| `enable_private_endpoint` | `false` | `true` = add PE + private DNS, disable public access (~$7/mo) |
+| `enable_private_endpoint` | `false` | `true` = add PE + private DNS, disable public access |
 | `restrict_network` | `false` | `true` = lock KV/Storage public endpoints to the app subnet + your IP |
 | `deployer_ip` | `""` | Your public IP to allow when `restrict_network = true` |
 
